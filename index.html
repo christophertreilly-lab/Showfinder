@@ -2,51 +2,36 @@
 
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="What To Watch" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+  <meta name="apple-mobile-web-app-title" content="What To Watch"/>
   <title>What To Watch</title>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
-    ::-webkit-scrollbar { width: 4px; } 
-    ::-webkit-scrollbar-track { background: #111; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0a0a0a;color:#eee;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;overscroll-behavior:none}
+    #loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px}
+    .spin{width:36px;height:36px;border:3px solid #222;border-top-color:#E8B86D;border-radius:50%;animation:s 0.8s linear infinite}
+    @keyframes s{to{transform:rotate(360deg)}}
+    input{-webkit-appearance:none;border-radius:8px}
+    button{-webkit-tap-highlight-color:transparent}
   </style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+<div id="loading"><div class="spin"></div><p style="color:#555;font-size:13px">Loading…</p></div>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const{useState,useEffect,createElement:h,Fragment}=React;
 
-```
-// Mock window.storage using localStorage
-window.storage = {
-  get: (key) => {
-    try {
-      const val = localStorage.getItem('sf_' + key);
-      return Promise.resolve(val ? { value: val } : null);
-    } catch(e) { return Promise.resolve(null); }
-  },
-  set: (key, value) => {
-    try {
-      localStorage.setItem('sf_' + key, value);
-      return Promise.resolve({ value });
-    } catch(e) { return Promise.resolve(null); }
-  },
-  delete: (key) => {
-    try {
-      localStorage.removeItem('sf_' + key);
-      return Promise.resolve({ deleted: true });
-    } catch(e) { return Promise.resolve(null); }
-  }
+// Storage polyfill
+window.storage={
+get:k=>{try{var v=localStorage.getItem(‘sf_’+k);return Promise.resolve(v?{value:v}:null)}catch(e){return Promise.resolve(null)}},
+set:(k,v)=>{try{localStorage.setItem(‘sf_’+k,v);return Promise.resolve({value:v})}catch(e){return Promise.resolve(null)}},
+delete:k=>{try{localStorage.removeItem(‘sf_’+k);return Promise.resolve({deleted:true})}catch(e){return Promise.resolve(null)}}
 };
-```
 
 const ALL = [
 // ── PRESTIGE DRAMA ──
@@ -453,205 +438,162 @@ const j = Math.floor(Math.random() * (i + 1));
 return a;
 }
 
-const TABS = [
-{ id:“all”,         label:“All”,        filter: i => true },
-{ id:“2027”,        label:“🔭 2027”,    filter: i => i.year === “2027” && i.rating === “Anticipated” },
-{ id:“2026”,        label:“🔜 2026”,    filter: i => i.year === “2026” && i.rating === “Anticipated” },
-{ id:“2025”,        label:“📅 2025”,    filter: i => i.release && i.release.includes(“2025”) },
-{ id:“tv”,          label:“TV Series”,  filter: i => i.type === “TV Series” },
-{ id:“movies”,      label:“Movies”,     filter: i => i.type === “Movie” },
-{ id:“miniseries”,  label:“Mini-Series”,filter: i => i.type === “Mini-Series” },
-{ id:“docs”,        label:“Docs”,       filter: i => i.type === “Documentary” },
-{ id:“comedy”,      label:“Comedy”,     filter: i => i.genres.includes(“Comedy”) },
-{ id:“scifi”,       label:“Sci-Fi”,     filter: i => i.genres.includes(“Sci-Fi”) },
-{ id:“fantasy”,     label:“Fantasy”,    filter: i => i.genres.includes(“Fantasy”) },
-{ id:“drama”,       label:“Drama”,      filter: i => i.genres.includes(“Drama”) && !i.genres.includes(“Comedy”) },
-{ id:“thriller”,    label:“Thriller”,   filter: i => i.genres.includes(“Thriller”) },
-{ id:“action”,      label:“Action”,     filter: i => i.genres.includes(“Action”) },
+const TABS=[
+{id:“all”,       label:“All”,        fn:i=>true},
+{id:“t2027”,     label:“🔭 2027”,    fn:i=>i.year===“2027”&&i.rating===“Anticipated”},
+{id:“t2026”,     label:“🔜 2026”,    fn:i=>i.year===“2026”&&i.rating===“Anticipated”},
+{id:“t2025”,     label:“📅 2025”,    fn:i=>i.release&&i.release.includes(“2025”)},
+{id:“tv”,        label:“TV”,         fn:i=>i.type===“TV Series”},
+{id:“movies”,    label:“Movies”,     fn:i=>i.type===“Movie”},
+{id:“mini”,      label:“Mini”,       fn:i=>i.type===“Mini-Series”},
+{id:“docs”,      label:“Docs”,       fn:i=>i.type===“Documentary”},
+{id:“comedy”,    label:“Comedy”,     fn:i=>i.genres.includes(“Comedy”)},
+{id:“scifi”,     label:“Sci-Fi”,     fn:i=>i.genres.includes(“Sci-Fi”)},
+{id:“fantasy”,   label:“Fantasy”,    fn:i=>i.genres.includes(“Fantasy”)},
+{id:“thriller”,  label:“Thriller”,   fn:i=>i.genres.includes(“Thriller”)},
+{id:“action”,    label:“Action”,     fn:i=>i.genres.includes(“Action”)},
+{id:“drama”,     label:“Drama”,      fn:i=>i.genres.includes(“Drama”)&&!i.genres.includes(“Comedy”)},
 ];
 
-const MOODS_LIST = [“Feel-Good”,“Edge of Seat”,“Emotional”,“Mind-Bending”,“Easy Watch”,“Intense”];
+const MOODS=[“Feel-Good”,“Edge of Seat”,“Emotional”,“Mind-Bending”,“Easy Watch”,“Intense”];
+const gold=”#E8B86D”;
+const bg=”#0a0a0a”;
 
-function shuffle(arr) {
-const a = […arr];
-for (let i = a.length - 1; i > 0; i–) {
-const j = Math.floor(Math.random() * (i + 1));
-[a[i], a[j]] = [a[j], a[i]];
-}
-return a;
-}
+function shuffle(a){a=[…a];for(let i=a.length-1;i>0;i–){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
-function ResultCard({ r }) {
-const gold = “#E8B86D”;
-const isAnticipated = r.rating === “Anticipated”;
-return (
-<div style={{ background:”#141414”, border:“1px solid #1c1c1c”, borderRadius:“13px”, padding:“16px 18px”, position:“relative”, overflow:“hidden” }}>
-<div style={{ position:“absolute”, top:0, left:0, right:0, height:“2px”, background: isAnticipated ? “linear-gradient(90deg,#5a9a5a,transparent)” : “linear-gradient(90deg,#E8B86D,transparent)” }}/>
-<div style={{ display:“flex”, justifyContent:“space-between”, alignItems:“center”, marginBottom:“5px” }}>
-<span style={{ background: isAnticipated ? “rgba(109,186,109,0.15)” : “rgba(232,184,109,0.09)”, color: isAnticipated ? “#6dba6d” : gold, fontSize:“9px”, fontWeight:700, padding:“2px 8px”, borderRadius:“100px”, letterSpacing:“0.1em”, textTransform:“uppercase” }}>
-{isAnticipated ? “🔜 “ + r.type : r.type}
-</span>
-<span style={{ color:”#aaa”, fontSize:“11px” }}>
-{!isAnticipated ? r.year + “ · ★ “ + r.rating : (r.release ? “🗓 “ + r.release : r.year)}
-</span>
-</div>
-<h3 style={{ color:”#EDE8DE”, fontSize:“15px”, fontWeight:700, margin:“0 0 5px”, lineHeight:1.3 }}>{r.title}</h3>
-<p style={{ color:”#bbb”, fontSize:“12px”, lineHeight:1.65, margin:“0 0 8px” }}>{r.desc}</p>
-<p style={{ color:”#c9903a”, fontSize:“11px”, fontStyle:“italic”, margin:0, borderTop:“1px solid #181818”, paddingTop:“8px” }}>✦ {r.why}</p>
-</div>
+function s(obj){return Object.entries(obj).map(([k,v])=>k.replace(/([A-Z])/g,’-$1’).toLowerCase()+’:’+v).join(’;’)}
+
+function Card({r}){
+const ant=r.rating===“Anticipated”;
+const green=”#6dba6d”;
+const accent=ant?green:gold;
+return h(‘div’,{style:{background:”#141414”,border:“1px solid #2a2a2a”,borderRadius:“13px”,padding:“16px 18px”,position:“relative”,overflow:“hidden”}},
+h(‘div’,{style:{position:“absolute”,top:0,left:0,right:0,height:“2px”,background:`linear-gradient(90deg,${accent},transparent)`}}),
+h(‘div’,{style:{display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:“5px”}},
+h(‘span’,{style:{background:ant?“rgba(109,186,109,0.15)”:“rgba(232,184,109,0.09)”,color:accent,fontSize:“9px”,fontWeight:700,padding:“2px 8px”,borderRadius:“100px”,letterSpacing:“0.1em”,textTransform:“uppercase”}},
+(ant?“🔜 “:””)+r.type
+),
+h(‘span’,{style:{color:”#888”,fontSize:“11px”}},
+ant?(r.release?“🗓 “+r.release:r.year):(r.year+” · ★ “+r.rating)
+)
+),
+h(‘h3’,{style:{color:”#EDE8DE”,fontSize:“15px”,fontWeight:700,margin:“0 0 5px”,lineHeight:1.3}},r.title),
+h(‘p’,{style:{color:”#bbb”,fontSize:“12px”,lineHeight:1.65,margin:“0 0 8px”}},r.desc),
+h(‘p’,{style:{color:”#c9903a”,fontSize:“11px”,fontStyle:“italic”,margin:0,borderTop:“1px solid #222”,paddingTop:“8px”}},“✦ “+r.why)
 );
 }
 
-function ShowFinder() {
-const [activeTab, setActiveTab] = useState(“all”);
-const [moods,     setMoods]     = useState([]);
-const [query,     setQuery]     = useState(””);
-const [seen,      setSeen]      = useState([]);
-const [showAll,   setShowAll]   = useState(false);
+function App(){
+const[tab,setTab]=useState(“all”);
+const[moods,setMoods]=useState([]);
+const[q,setQ]=useState(””);
+const[seen,setSeen]=useState([]);
+const[showAll,setShowAll]=useState(false);
 
-useEffect(() => {
-window.storage.get(“sf-seen3”).then(r => {
-if (r && r.value) setSeen(JSON.parse(r.value));
-}).catch(() => {});
-}, []);
+useEffect(()=>{
+window.storage.get(“sf-seen3”).then(r=>{if(r&&r.value)setSeen(JSON.parse(r.value))}).catch(()=>{});
+},[]);
 
-function toggleMood(m) {
-setMoods(moods.includes(m) ? moods.filter(x => x !== m) : […moods, m]);
-setShowAll(false);
-}
+const tabDef=TABS.find(t=>t.id===tab)||TABS[0];
+const ql=q.trim().toLowerCase();
 
-const tab = TABS.find(t => t.id === activeTab) || TABS[0];
-const q = query.trim().toLowerCase();
-
-const filtered = ALL.filter(item => {
-if (!tab.filter(item)) return false;
-if (moods.length && !moods.some(m => item.moods.includes(m))) return false;
-if (q && ![item.title, item.desc, item.why, item.year, …item.genres, …item.moods].join(” “).toLowerCase().includes(q)) return false;
+const filtered=ALL.filter(item=>{
+if(!tabDef.fn(item))return false;
+if(moods.length&&!moods.some(m=>item.moods.includes(m)))return false;
+if(ql&&![item.title,item.desc,item.why,item.year,…item.genres,…item.moods].join(” “).toLowerCase().includes(ql))return false;
 return true;
 });
 
-const unseenFirst = […filtered.filter(i => !seen.includes(i.title)), …filtered.filter(i => seen.includes(i.title))];
-const display = showAll ? unseenFirst : unseenFirst.slice(0, 12);
+const sorted=[…filtered.filter(i=>!seen.includes(i.title)),…filtered.filter(i=>seen.includes(i.title))];
+const display=showAll?sorted:sorted.slice(0,12);
 
-function markSeen(titles) {
-const newSeen = […new Set([…seen, …titles])];
-setSeen(newSeen);
-window.storage.set(“sf-seen3”, JSON.stringify(newSeen)).catch(() => {});
+function toggleMood(m){setMoods(p=>p.includes(m)?p.filter(x=>x!==m):[…p,m]);setShowAll(false)}
+
+function surpriseMe(){
+const pool=shuffle(filtered.filter(i=>!seen.includes(i.title)));
+const picks=(pool.length>=6?pool:shuffle(filtered)).slice(0,6);
+const ns=[…new Set([…seen,…picks.map(p=>p.title)])];
+setSeen(ns);window.storage.set(“sf-seen3”,JSON.stringify(ns)).catch(()=>{});
 }
 
-function surpriseMe() {
-const unseen = filtered.filter(i => !seen.includes(i.title));
-const pool = unseen.length >= 6 ? unseen : filtered;
-const picks = shuffle(pool).slice(0, 6);
-markSeen(picks.map(p => p.title));
-// scroll to top
-window.scrollTo({ top: 0, behavior: “smooth” });
-}
+function resetSeen(){setSeen([]);window.storage.delete(“sf-seen3”).catch(()=>{})}
 
-const gold = “#E8B86D”;
-const bg   = “#0C0C0C”;
+// Tab bar
+const tabBar=h(‘div’,{style:{borderBottom:“1px solid #222”,overflowX:“auto”,whiteSpace:“nowrap”,background:bg,position:“sticky”,top:“50px”,zIndex:19,WebkitOverflowScrolling:“touch”}},
+h(‘div’,{style:{display:“inline-flex”}},
+…TABS.map(t=>h(‘button’,{key:t.id,onClick:()=>{setTab(t.id);setShowAll(false)},style:{
+padding:“12px 15px”,background:“transparent”,border:“none”,
+borderBottom:tab===t.id?“2px solid #E8B86D”:“2px solid transparent”,
+color:tab===t.id?gold:”#888”,fontSize:“12px”,fontWeight:tab===t.id?700:400,
+cursor:“pointer”,fontFamily:“inherit”,whiteSpace:“nowrap”
+}},t.label))
+)
+);
 
-return (
-<div style={{ minHeight:“100vh”, background:bg, color:”#EDE8DE”, fontFamily:“system-ui,sans-serif” }}>
+// Header
+const header=h(‘div’,{style:{borderBottom:“1px solid #222”,padding:“13px 18px”,display:“flex”,alignItems:“center”,gap:“10px”,position:“sticky”,top:0,background:bg,zIndex:20}},
+h(‘div’,{style:{width:“25px”,height:“25px”,background:“linear-gradient(135deg,#E8B86D,#A8731A)”,borderRadius:“6px”,display:“flex”,alignItems:“center”,justifyContent:“center”,fontSize:“11px”}},“▶”),
+h(‘span’,{style:{fontSize:“13px”,fontWeight:700,letterSpacing:“0.05em”}},“WHAT TO WATCH”),
+h(‘span’,{style:{color:”#555”,fontSize:“10px”,marginLeft:“4px”}},ALL.length+” picks”),
+seen.length>0&&h(‘div’,{style:{marginLeft:“auto”,display:“flex”,alignItems:“center”,gap:“6px”}},
+h(‘span’,{style:{color:”#888”,fontSize:“10px”}},“✓ “+seen.length+” seen”),
+h(‘button’,{onClick:resetSeen,style:{background:“transparent”,border:“1px solid #333”,color:”#888”,borderRadius:“5px”,padding:“2px 7px”,fontSize:“9px”,cursor:“pointer”}},“reset”)
+)
+);
 
-```
-  {/* ── HEADER ── */}
-  <div style={{ borderBottom:"1px solid #161616", padding:"13px 18px", display:"flex", alignItems:"center", gap:"10px", position:"sticky", top:0, background:bg, zIndex:20 }}>
-    <div style={{ width:"25px", height:"25px", background:"linear-gradient(135deg,#E8B86D,#A8731A)", borderRadius:"6px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px" }}>▶</div>
-    <span style={{ fontSize:"13px", fontWeight:700, letterSpacing:"0.05em" }}>WHAT TO WATCH</span>
-    <span style={{ color:"#aaa", fontSize:"10px", marginLeft:"4px" }}>{ALL.length} picks</span>
-    {seen.length > 0 && (
-      <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"6px" }}>
-        <span style={{ color:"#aaa", fontSize:"10px" }}>✓ {seen.length} seen</span>
-        <button onClick={() => { setSeen([]); window.storage.delete("sf-seen3").catch(() => {}); }}
-          style={{ background:"transparent", border:"1px solid #1e1e1e", color:"#aaa", borderRadius:"5px", padding:"2px 7px", fontSize:"9px", cursor:"pointer" }}>reset</button>
-      </div>
-    )}
-  </div>
+// Search row
+const searchRow=h(‘div’,{style:{marginBottom:“12px”,display:“flex”,gap:“8px”,alignItems:“center”}},
+h(‘input’,{value:q,onChange:e=>{setQ(e.target.value);setShowAll(false)},placeholder:“Search…”,style:{
+flex:1,background:”#141414”,border:“1.5px solid #333”,borderRadius:“8px”,color:”#ddd”,
+fontSize:“13px”,padding:“9px 12px”,outline:“none”,fontFamily:“inherit”
+}}),
+q&&h(‘button’,{onClick:()=>setQ(””),style:{background:“transparent”,border:“1px solid #333”,color:”#888”,borderRadius:“7px”,padding:“8px 11px”,fontSize:“11px”,cursor:“pointer”}},“✕”)
+);
 
-  {/* ── TABS ── */}
-  <div style={{ borderBottom:"1px solid #161616", overflowX:"auto", whiteSpace:"nowrap", padding:"0 18px", background:bg, position:"sticky", top:"50px", zIndex:19 }}>
-    <div style={{ display:"inline-flex", gap:"0" }}>
-      {TABS.map(t => (
-        <button key={t.id} onClick={() => { setActiveTab(t.id); setShowAll(false); }} style={{
-          padding:"12px 16px", background:"transparent", border:"none",
-          borderBottom: activeTab === t.id ? "2px solid #E8B86D" : "2px solid transparent",
-          color: activeTab === t.id ? gold : "#bbb",
-          fontSize:"12px", fontWeight: activeTab === t.id ? 700 : 400,
-          cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", transition:"all 0.15s",
-        }}>{t.label}</button>
-      ))}
-    </div>
-  </div>
+// Mood chips
+const moodRow=h(‘div’,{style:{display:“flex”,flexWrap:“wrap”,gap:“6px”,marginBottom:“14px”}},
+…MOODS.map(m=>h(‘button’,{key:m,onClick:()=>toggleMood(m),style:{
+padding:“5px 12px”,borderRadius:“100px”,cursor:“pointer”,fontSize:“11px”,
+border:moods.includes(m)?“1.5px solid #E8B86D”:“1.5px solid #333”,
+background:moods.includes(m)?“rgba(232,184,109,0.14)”:“transparent”,
+color:moods.includes(m)?gold:”#888”,fontFamily:“inherit”
+}},m)),
+moods.length>0&&h(‘button’,{onClick:()=>setMoods([]),style:{padding:“5px 12px”,borderRadius:“100px”,border:“1px solid #333”,background:“transparent”,color:”#555”,fontSize:“11px”,cursor:“pointer”}},“clear”)
+);
 
-  <div style={{ maxWidth:"620px", margin:"0 auto", padding:"18px 16px 100px" }}>
+// Count + surprise
+const countRow=h(‘div’,{style:{display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:“12px”}},
+h(‘span’,{style:{color:”#888”,fontSize:“11px”}},filtered.length===0?“No matches”:`${filtered.length} title${filtered.length!==1?"s":""}`),
+h(‘button’,{onClick:surpriseMe,style:{background:“transparent”,border:“1px solid #333”,color:”#aaa”,borderRadius:“7px”,padding:“5px 12px”,fontSize:“11px”,cursor:“pointer”,fontFamily:“inherit”}},“🎲 Surprise me”)
+);
 
-    {/* ── SEARCH + MOOD ── */}
-    <div style={{ marginBottom:"16px", display:"flex", gap:"8px", alignItems:"center" }}>
-      <input value={query} onChange={e => { setQuery(e.target.value); setShowAll(false); }}
-        placeholder="Search titles, genres, directors…"
-        style={{ flex:1, background:"#141414", border:"1.5px solid #1e1e1e", borderRadius:"8px", color:"#ccc", fontSize:"13px", padding:"9px 12px", outline:"none", fontFamily:"inherit" }}
-        onFocus={e => e.target.style.borderColor = gold}
-        onBlur={e  => e.target.style.borderColor = "#999"}
-      />
-      {query && (
-        <button onClick={() => setQuery("")} style={{ background:"transparent", border:"1px solid #1e1e1e", color:"#bbb", borderRadius:"7px", padding:"8px 11px", fontSize:"11px", cursor:"pointer" }}>✕</button>
-      )}
-    </div>
+// Cards
+const cards=filtered.length===0
+?h(‘p’,{style:{color:”#666”,fontSize:“13px”,textAlign:“center”,paddingTop:“40px”}},“No matches — try clearing filters.”)
+:h(Fragment,null,
+h(‘div’,{style:{display:“flex”,flexDirection:“column”,gap:“10px”}},
+…display.map((r,i)=>h(Card,{key:r.title+i,r}))
+),
+!showAll&&filtered.length>12&&h(‘button’,{onClick:()=>setShowAll(true),style:{
+marginTop:“14px”,width:“100%”,padding:“12px”,background:“transparent”,
+border:“1.5px solid #333”,borderRadius:“10px”,color:”#888”,fontSize:“13px”,cursor:“pointer”,fontFamily:“inherit”
+}},“Show all “+filtered.length+” →”)
+);
 
-    {/* Mood filters */}
-    <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"18px" }}>
-      {MOODS_LIST.map(m => (
-        <button key={m} onClick={() => toggleMood(m)} style={{
-          padding:"5px 12px", borderRadius:"100px", cursor:"pointer", fontSize:"11px",
-          border: moods.includes(m) ? "1.5px solid #E8B86D" : "1.5px solid #222",
-          background: moods.includes(m) ? "rgba(232,184,109,0.14)" : "transparent",
-          color: moods.includes(m) ? gold : "#bbb", fontFamily:"inherit", transition:"all 0.15s",
-        }}>{m}</button>
-      ))}
-      {moods.length > 0 && (
-        <button onClick={() => setMoods([])} style={{ padding:"5px 12px", borderRadius:"100px", border:"1px solid #1e1e1e", background:"transparent", color:"#999", fontSize:"11px", cursor:"pointer" }}>clear</button>
-      )}
-    </div>
-
-    {/* ── RESULTS COUNT ── */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
-      <span style={{ color:"#999", fontSize:"11px" }}>
-        {filtered.length === 0 ? "No matches" : `${filtered.length} title${filtered.length !== 1 ? "s" : ""}${moods.length || q ? " matched" : ""}`}
-      </span>
-      <button onClick={surpriseMe} style={{ background:"transparent", border:"1px solid #2a2a2a", color:"#aaa", borderRadius:"7px", padding:"5px 12px", fontSize:"11px", cursor:"pointer", fontFamily:"inherit" }}>
-        🎲 Surprise me
-      </button>
-    </div>
-
-    {/* ── CARDS ── */}
-    {filtered.length === 0 ? (
-      <p style={{ color:"#999", fontSize:"13px", textAlign:"center", paddingTop:"40px" }}>No matches — try clearing some filters.</p>
-    ) : (
-      <>
-        <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-          {display.map((r, i) => <ResultCard key={r.title + i} r={r} />)}
-        </div>
-
-        {!showAll && filtered.length > 12 && (
-          <button onClick={() => setShowAll(true)} style={{ marginTop:"14px", width:"100%", padding:"12px", background:"transparent", border:"1.5px solid #222", borderRadius:"10px", color:"#aaa", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>
-            Show all {filtered.length} →
-          </button>
-        )}
-      </>
-    )}
-  </div>
-</div>
-```
-
+return h(‘div’,{style:{minHeight:“100vh”,background:bg,color:”#EDE8DE”,fontFamily:“inherit”}},
+header,
+tabBar,
+h(‘div’,{style:{maxWidth:“620px”,margin:“0 auto”,padding:“18px 16px 100px”}},
+searchRow,moodRow,countRow,cards
+)
 );
 }
 
-```
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<ShowFinder />);
-```
+window.addEventListener(‘load’,()=>{
+document.getElementById(‘loading’).style.display=‘none’;
+ReactDOM.createRoot(document.getElementById(‘root’)).render(h(App,null));
+});
+</script>
 
-  </script>
 </body>
 </html>
